@@ -11,6 +11,11 @@ model returns `Not found in context.` rather than guessing.
 The pipeline is written out in plain Python instead of being hidden behind a framework chain, so
 every step (parse, chunk, embed, retrieve, prompt, log) is a file you can open and read in a minute.
 
+**Contents** — [How it works](#how-it-works) · [Project layout](#project-layout) ·
+[Requirements](#requirements) · [Setup](#setup) · [First run](#first-run) · [API](#api) ·
+[Configuration](#configuration) · [Troubleshooting](#troubleshooting) ·
+[Evaluation](#evaluation) · [Design notes](#design-notes) · [Limitations](#limitations)
+
 ---
 
 ## How it works
@@ -143,6 +148,24 @@ client falls back to port 8000, so keep the two in step if you change the backen
 
 ---
 
+## First run
+
+Run both servers at once, in two terminals. The order that matters is this:
+
+1. **Choose a PDF, then click "Upload & Index".** Selecting a file in the picker does not send it.
+   Nothing is uploaded until that button is clicked.
+2. **Wait for the green confirmation**, `File uploaded and is being processed`. The backend terminal
+   should show `POST /api/upload HTTP/1.1" 200 OK` at the same moment.
+3. **Give it a few seconds.** Indexing runs in a background task and reports nothing when it
+   finishes. The first upload is slower because `sentence-transformers` downloads the embedding
+   model (~90 MB) on demand.
+4. **Ask your question.** Answers arrive with `[filename, page N]` citations listed underneath.
+
+You can confirm indexing worked by checking that `backend/data/processed/` now contains
+`faiss_index` and `chunks.json`, and that your PDF is sitting in `backend/data/raw/`.
+
+---
+
 ## API
 
 | Method | Endpoint       | Description                                                             |
@@ -187,6 +210,46 @@ All tunables live in `backend/config.py`. The ones worth touching:
 | `MODEL_NAME`      | env-driven         | A Groq model id, or an Ollama model tag in local mode.     |
 
 Retrieval depth (`top_k=5`) is currently passed at the call site in `routes/query.py`.
+
+---
+
+## Troubleshooting
+
+**Every question answers `Not found in context.`**
+Almost always means nothing is indexed, rather than a failure. With no index file on disk,
+`retrieve()` returns an empty list and `generate_answer()` returns that string without ever calling
+the model. Check `backend/data/processed/` — if `faiss_index` is missing, the upload never
+completed. Re-read [First run](#first-run): the "Upload & Index" button has to be clicked, and a
+successful upload always leaves a `POST /api/upload` line in the backend log.
+
+**`ModuleNotFoundError: No module named 'config'`**
+uvicorn was started from the wrong directory. The backend uses flat imports, so you must launch it
+from inside `backend/`.
+
+**`Activate.ps1 cannot be loaded because running scripts is disabled`**
+PowerShell's execution policy. Either run `Set-ExecutionPolicy -Scope Process RemoteSigned` first,
+or skip activation entirely and call the interpreter directly:
+`.\venv\Scripts\python.exe -m uvicorn main:app --reload --port 8080`.
+
+**Connection refused to `localhost:11434`**
+`USE_LOCAL_LLM=true` but Ollama isn't running. Start it and pull the model named in `MODEL_NAME`,
+or switch to Groq by setting `USE_LOCAL_LLM=false` with a valid `GROQ_API_KEY`. Settings are read
+once at startup, so restart uvicorn after editing `.env`.
+
+**`GROQ_API_KEY environment variable is not set`**
+Groq mode is active with an empty key. Note that retrieval still works without any LLM configured;
+only answer generation fails, so this error surfaces only after you have documents indexed.
+
+**Network errors in the browser console, but the backend looks healthy**
+Port mismatch between `VITE_API_URL` in `frontend/.env` and the port uvicorn is bound to. Vite reads
+`.env` only at startup, so restart the dev server after changing it.
+
+**A `404` on `GET /`**
+Expected. There is no root route; the app serves `/docs` and `/api/*` only.
+
+**Answers ignore a document you uploaded**
+Scanned or image-only PDFs extract no text, since there is no OCR step. Confirm the file has a real
+text layer, and remember that duplicate uploads of the same file compound its chunks in the index.
 
 ---
 
