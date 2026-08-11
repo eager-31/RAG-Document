@@ -1,0 +1,22 @@
+[
+  {
+    "question": "What is the main topic of the document?",
+    "expected_answer_keywords": ["topic", "subject"]
+  },
+  {
+    "question": "Who is the author of this paper?",
+    "expected_answer_keywords": ["author", "researcher"]
+  },
+  {
+    "question": "What was the methodology used in the study?",
+    "expected_answer_keywords": ["method", "approach"]
+  },
+  {
+    "question": "What were the primary conclusions?",
+    "expected_answer_keywords": ["conclusion", "finding"]
+  },
+  {
+    "question": "Is there a mention of an unknown concept that does not exist?",
+    "expected_answer_keywords": ["not found in context"]
+  }
+]

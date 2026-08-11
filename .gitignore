@@ -1,0 +1,54 @@
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- RAG runtime artifacts ---
+# Uploaded source documents, generated FAISS index / chunks, query logs DB
+**/backend/data/raw/
+**/backend/data/processed/
+**/backend/storage/*.db
+*.faiss
+*.sqlite
+*.sqlite3
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.sw?
